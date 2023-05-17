@@ -1,0 +1,92 @@
+#version 330 core
+out vec4 FragColor;
+
+in vec3 Normal;
+in vec3 FragPos;
+in vec2 TexCoord;
+
+uniform vec3 viewerPos;
+//sampler2D 不能放在struct中!!!!!!!
+uniform sampler2D diffuseMap;
+uniform sampler2D specularMap;
+
+struct Material{
+    float shininess;
+};
+uniform Material material;
+
+struct Light{
+    vec3 position;
+    vec3 direction;
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+    
+    float constant;
+    float linear;
+    float quadratic;
+    
+    float cutoff;
+    float outCutoff;
+};
+uniform Light light;
+
+void main()
+{
+    // vec3 diffuseMapColor=vec3(texture(diffuseMap,TexCoord).rgb);
+    // vec3 specularMapColor=vec3(texture(specularMap,TexCoord).rgb);
+    
+    // float d=length(light.position-FragPos);
+    // float attenuation=1.f/(light.constant+light.linear*d+light.quadratic*d*d);
+    
+    // vec3 ambient=light.ambient*diffuseMapColor;
+    // ambient*=attenuation;
+    
+    // vec3 norm=normalize(Normal);
+    // vec3 lightDir=normalize(light.position-FragPos);
+    // // vec3 lightDir=normalize(light.direction);
+    // float diff=max(dot(lightDir,norm),0.f);
+    // vec3 diffuse=light.diffuse*diff*diffuseMapColor;
+    // diffuse*=attenuation;
+    
+    // vec3 viewerDir=normalize(viewerPos-FragPos);
+    // vec3 halfVec=normalize(viewerDir+lightDir);
+    // float spec=pow(max(dot(norm,halfVec),0.f),material.shininess);
+    // vec3 specular=light.specular*spec*specularMapColor;
+    // specular*=attenuation;
+    
+    // vec3 result=ambient+diffuse+specular;
+    // FragColor=vec4(result,1.f);
+    
+    vec3 diffuseMapColor=vec3(texture(diffuseMap,TexCoord).rgb);
+    vec3 specularMapColor=vec3(texture(specularMap,TexCoord).rgb);
+    
+    float d=length(light.position-FragPos);
+    float attenuation=1.f/(light.constant+light.linear*d+light.quadratic*d*d);
+    
+    vec3 result=vec3(0.f);
+    vec3 lightDir=normalize(light.position-FragPos);
+    float theta=dot(-lightDir,normalize(light.direction));
+
+    float intensity=clamp((theta-light.outCutoff)/(light.cutoff-light.outCutoff),0.f,1.f);
+    
+    vec3 ambient=light.ambient*diffuseMapColor;
+    // ambient*=attenuation;
+    result+=ambient;
+    if(theta>light.outCutoff){
+        vec3 norm=normalize(Normal);
+        float diff=max(dot(lightDir,norm),0.f);
+        vec3 diffuse=light.diffuse*diff*diffuseMapColor;
+        diffuse*=attenuation*intensity;
+        result+=diffuse;
+        
+        vec3 viewerDir=normalize(viewerPos-FragPos);
+        vec3 halfVec=normalize(viewerDir+lightDir);
+        float spec=pow(max(dot(norm,halfVec),0.f),material.shininess);
+        vec3 specular=light.specular*spec*specularMapColor;
+        specular*=attenuation*intensity;
+        result+=specular;
+    }
+    
+    FragColor=vec4(result,1.f);
+}

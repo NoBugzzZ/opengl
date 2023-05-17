@@ -1,0 +1,3 @@
+set(srcs Shader.cpp)
+
+add_library(Shader ${srcs})
